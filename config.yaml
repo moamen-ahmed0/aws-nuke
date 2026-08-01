@@ -1,0 +1,162 @@
+# AWS Nuke config: what to scan, what to skip, and which accounts/presets apply.
+
+# Regions to scan. "global" covers IAM and other account-wide APIs; list regions you use.
+regions:
+  - global
+  - us-east-1
+  - eu-central-1
+
+# Account IDs that must NEVER be nuked (safety). Empty string is a placeholder—set real prod IDs.
+blocklist:
+  - "" # Production Account
+
+# Per-resource-type options (e.g. bypass deletion/stop protection so nuke can remove resources).
+settings:
+  EC2Image:
+    IncludeDisabled: true
+    IncludeDeprecated: true
+    DisableDeregistrationProtection: true
+  EC2Instance:
+    DisableStopProtection: true
+    DisableDeletionProtection: true
+  RDSInstance:
+    DisableDeletionProtection: true
+  CloudFormationStack:
+    DisableDeletionProtection: true
+  DynamoDBTable:
+    DisableDeletionProtection: true
+
+# Skip entire resource types (unavailable APIs, deprecated services, or known flaky list calls).
+resource-types:
+  excludes:
+    - S3Object # Excluded because S3 bucket removal handles removing all S3Objects
+    - ServiceCatalogTagOption # Excluded due to https://github.com/rebuy-de/aws-nuke/issues/515
+    - ServiceCatalogTagOptionPortfolioAttachment # Excluded due to https://github.com/rebuy-de/aws-nuke/issues/515
+    - FMSNotificationChannel # Excluded because it's not available
+    - FMSPolicy # Excluded because it's not available
+    - MachineLearningMLModel # Excluded due to ML being unavailable
+    - MachineLearningDataSource # Excluded due to ML being unavailable
+    - MachineLearningBranchPrediction # Excluded due to ML being unavailable
+    - MachineLearningEvaluation # Excluded due to ML being unavailable
+    - RoboMakerDeploymentJob # Deprecated Service
+    - RoboMakerFleet # Deprecated Service
+    - RoboMakerRobot # Deprecated Service
+    - RoboMakerSimulationJob # Deprecated Service
+    - RoboMakerRobotApplication # Deprecated Service
+    - RoboMakerSimulationApplication # Deprecated Service
+    - OpsWorksApp # Deprecated service
+    - OpsWorksInstance # Deprecated service
+    - OpsWorksLayer # Deprecated service
+    - OpsWorksUserProfile # Deprecated service
+    - OpsWorksCMBackup # Deprecated service
+    - OpsWorksCMServer # Deprecated service
+    - OpsWorksCMServerState # Deprecated service
+    - CodeStarProject # Deprecated service
+    - CodeStarConnection # Deprecated service
+    - CodeStarNotification # Deprecated service
+    - Cloud9Environment # Deprecated service
+    - CloudSearchDomain # Deprecated service
+    - RedshiftServerlessSnapshot # Deprecated service
+    - RedshiftServerlessNamespace # Deprecated service
+    - RedshiftServerlessWorkgroup # Deprecated service
+    - BedrockModelCustomizationJob # Service not available/accessible in this account
+    - "AWS::Timestream::Table" # Timestream not subscribed/not available (LiveAnalytics only)
+    - "AWS::Timestream::ScheduledQuery" # Timestream not subscribed/not available
+    - "AWS::Timestream::Database" # Timestream not subscribed/not available
+    - ShieldProtection # AWS Shield subscription does not exist
+    - ShieldProtectionGroup # AWS Shield subscription does not exist
+    - QLDBLedger # Amazon QLDB reached end of life on July 31, 2025
+    - LexBot # Excluded due to 503 service errors
+    - LexIntent # Excluded due to 503 service errors
+    - LexSlotType # Excluded due to 503 service errors
+    - LexModelBuildingServiceBotAlias # Excluded due to 503 service errors
+    - ElasticTranscoderPipeline # Excluded due to timeout errors
+    - ElasticTranscoderPreset # Excluded due to timeout errors
+    - InspectorAssessmentTarget # Amazon Inspector Classic resource (deprecated service)
+    - InspectorAssessmentRun # Amazon Inspector Classic resource (deprecated service)
+    - InspectorAssessmentTemplate # Amazon Inspector Classic resource (deprecated service)
+
+# Named bundles of filters; accounts reference these under `presets:`.
+presets:
+  # Skip default VPC and its related networking so AWS leaves the account baseline intact.
+  defaults:
+    filters:
+      EC2VPC:
+        - property: IsDefault
+          value: "true"
+      EC2Subnet:
+        - property: DefaultVPC
+          value: "true"
+      EC2DefaultSecurityGroupRule:
+        - property: DefaultVPC
+          value: "true"
+      EC2InternetGateway:
+        - property: DefaultVPC
+          value: "true"
+      EC2InternetGatewayAttachment:
+        - property: DefaultVPC
+          value: "true"
+      EC2DHCPOption:
+        - property: DefaultVPC
+          value: "true"
+
+  # Protect break-glass IAM users/groups, all secrets, and budgets from deletion.
+  common:
+    filters:
+      IAMUser:
+        - property: Name
+          value: "admin"
+      IAMUserAccessKey:
+        - property: UserName
+          value: "admin"
+      IAMUserPolicyAttachment:
+        - property: UserName
+          value: "admin"
+      IAMUserPolicy:
+        - property: UserName
+          value: "admin"
+      IAMUserGroupAttachment:
+        - property: UserName
+          value: "admin"
+      IAMLoginProfile:
+        - property: UserName
+          value: "admin"
+      IAMGroup:
+        - property: Name
+          value: "AdminGroup"
+      IAMGroupPolicyAttachment:
+        - property: GroupName
+          value: "AdminGroup"
+      IAMGroupPolicy:
+        - property: GroupName
+          value: "AdminGroup"
+      SecretsManagerSecret:
+        - type: glob
+          value: "*"
+      BudgetsBudget:
+        - type: glob
+          value: "*"
+
+  # # Keep org/Control Tower roles and related trails from being removed.
+  # organization:
+  #   filters:
+  #     IAMRole:
+  #       - property: Name
+  #         type: contains
+  #         value: "OrganizationAccountAccessRole"
+  #     IAMRolePolicyAttachment:
+  #       - property: RoleName
+  #         value: "OrganizationAccountAccessRole"
+  #     CloudTrailTrail:
+  #       - property: Name
+  #         type: contains
+  #         value: "aws-controltower"
+
+# Target accounts: AWS account ID, optional alias for prompts, and which presets apply.
+accounts:
+  "307946672811":
+    alias: aws-personal-account-307946672811
+    presets:
+      - defaults
+      - common
+      # - organization

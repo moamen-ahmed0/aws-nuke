@@ -1,0 +1,23 @@
+# AWS Credentials
+.aws/
+*.pem
+*.key
+
+# AWS Nuke
+*.log
+nuke.log
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
