@@ -75,6 +75,8 @@ resource-types:
     - InspectorAssessmentTarget # Amazon Inspector Classic resource (deprecated service)
     - InspectorAssessmentRun # Amazon Inspector Classic resource (deprecated service)
     - InspectorAssessmentTemplate # Amazon Inspector Classic resource (deprecated service)
+    - ElastiCacheUser # Excluded due to 503 service errors
+    - ElastiCacheUserGroup # Excluded due to 503 service errors
 
 # Named bundles of filters; accounts reference these under `presets:`.
 presets:
